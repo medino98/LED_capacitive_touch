@@ -14,7 +14,7 @@ uint16_t buffer[BUFFER_SIZE];
 uint8_t index = 0;
 uint16_t calib_avg;
 
-void timer_init()
+void touch_timer_init()
 {
   TCCR4A=0;
   TCCR4A = _BV(WGM40);
@@ -23,6 +23,16 @@ void timer_init()
   TCNT4 = 0;
   OCR4A = 192;
   TIMSK4 = _BV(OCIE4A)|_BV(TOIE4);
+}
+void led_pwm_timer_init()
+{
+  TCCR5A=0;
+  TCCR5A = _BV(WGM50);
+  TCCR5B=0;
+  TCCR5B = _BV(CS50)|_BV(CS52)|_BV(WGM52);
+  TCNT5 = 0;
+  OCR5A = 192;
+  TIMSK5 = _BV(OCIE5A)|_BV(TOIE5);
 }
 void comparator_init()
 {
@@ -75,7 +85,7 @@ int main(void)
 
   sei(); //enable interrupts
   
-  timer_init();
+  touch_timer_init();
   comparator_init();
 
   init_buffer();
@@ -84,6 +94,7 @@ int main(void)
   
   while(true)
   {
+    //Calibrtion polling
     if(PINB & _BV(PINB5))
     {
       while(counter != 16)
@@ -101,9 +112,9 @@ int main(void)
       _delay_ms(1000);
     }
 
-    get_avg();
+   // get_avg();
 
-    // Control
+    // Control and debouncing
     if(get_avg() > calib_avg + TOGGLE_THRESHOLD)
     {
       if(!pressed_before)
